@@ -8,11 +8,6 @@ import (
 	"time"
 )
 
-var(
-	jobKey string = "/cron/jobs/"
-	jobValue []byte
-)
-
 type JobMgr struct {
 	Client *clientv3.Client
 	KV clientv3.KV
@@ -49,10 +44,11 @@ func NewJobMgr(conf *Config)(mgr *JobMgr,err error){
 //保存任务
 func (jobMgr *JobMgr)SaveJob(job *common.Job)(oldJob *common.Job,err error){
 	var (
+		jobValue []byte
 		putRes *clientv3.PutResponse
 	)
-	//把任务保存到/cron/jobs/任务名 -> json
-	jobKey = jobKey + job.Name
+	//拼接任务名称
+	jobKey := common.JOB_SAVE_DIR  + job.Name
 	//任务信息json化
 	if jobValue,err = json.Marshal(job);err != nil{
 		return
@@ -67,6 +63,30 @@ func (jobMgr *JobMgr)SaveJob(job *common.Job)(oldJob *common.Job,err error){
 			return
 		}
 	}
+	defer jobMgr.Client.Close()
 	return oldJob,nil
+}
 
+//删除任务
+func (jobMgr *JobMgr)DeleteJob(jobName string)(oldJob *common.Job,err error){
+	var (
+		oldJobObj common.Job
+		delRes *clientv3.DeleteResponse
+	)
+	//拼接任务名称
+	jobKey := common.JOB_SAVE_DIR + jobName
+	//从etcd删除
+	if delRes,err = jobMgr.KV.Delete(context.TODO(),jobKey,clientv3.WithPrevKV());err !=nil{
+		return
+	}
+	//返回删除的任务信息
+	if len(delRes.PrevKvs) != 0 {
+		if err = json.Unmarshal(delRes.PrevKvs[0].Value,&oldJobObj);err != nil{
+			err = nil
+			return
+		}
+		oldJob = &oldJobObj
+	}
+	defer jobMgr.Client.Close()
+	return
 }
