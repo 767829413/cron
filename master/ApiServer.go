@@ -3,6 +3,7 @@ package master
 import (
 	"cron/common"
 	"encoding/json"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -25,6 +26,8 @@ func NewApiServer(jobMgr *JobMgr,conf *Config)(apiServer *ApiServer,err error){
 	mux = http.NewServeMux()
 	mux.HandleFunc("/job/save",getHandleJobSaveFunc(jobMgr))
 	mux.HandleFunc("/job/delete",getHandleJobDeleteFunc(jobMgr))
+	mux.HandleFunc("/job/list",getHandleJobListFunc(jobMgr))
+	mux.HandleFunc("/job/kill",getHandleJobKillFunc(jobMgr))
 
 	//启动TCP监听
 	if lister,err = net.Listen("tcp",":"+strconv.Itoa(conf.ApiPort));err != nil {
@@ -37,7 +40,11 @@ func NewApiServer(jobMgr *JobMgr,conf *Config)(apiServer *ApiServer,err error){
 		Handler:mux,
 	}
 
-	go httpServer.Serve(lister)
+	go func() {
+		if err = httpServer.Serve(lister);err != nil {
+			log.Println(err)
+		}
+	}()
 
 	return &ApiServer{
 		httpServer:httpServer,
@@ -70,7 +77,9 @@ func getHandleJobSaveFunc(jobMgr *JobMgr)( handler func(w http.ResponseWriter,r 
 			goto ERR
 		}
 		//5.返回正常应答{"errno":0,"msg":"","data":{...}}
-		w.Write(common.BuildResponse(0,"success",oldJob))
+		if _,err = w.Write(common.BuildResponse(0,"success",oldJob));err != nil {
+			goto ERR
+		}
 		return
 	ERR:
 		w.Write(common.BuildResponse(-1,err.Error(),nil))
@@ -97,7 +106,57 @@ func getHandleJobDeleteFunc(mgr *JobMgr) func(http.ResponseWriter, *http.Request
 		if oldJob,err = mgr.DeleteJob(jobName);err != nil {
 			goto ERR
 		}
-		w.Write(common.BuildResponse(0,"success",oldJob))
+		if _,err = w.Write(common.BuildResponse(0,"success",oldJob));err != nil {
+			goto ERR
+		}
+		return
+	ERR:
+		w.Write(common.BuildResponse(-1,err.Error(),nil))
+	}
+}
+
+//获取任务列表(列举所有cron任务)
+func getHandleJobListFunc(mgr *JobMgr) func(http.ResponseWriter, *http.Request) {
+	return func (w http.ResponseWriter,r *http.Request){
+		var(
+			jobList []*common.Job
+			err error
+		)
+		w.Header().Set("Content-Type","application/json")
+		//获取任务列表
+		if jobList,err = mgr.ListJobs(); err != nil {
+			goto ERR
+		}
+		//返回正常应答
+		if _,err = w.Write(common.BuildResponse(0,"success",jobList));err != nil{
+			goto ERR
+		}
+		return
+		ERR:
+			w.Write(common.BuildResponse(-1,err.Error(),nil))
+	}
+}
+
+//强制杀死某个任务
+//POST /job/kill name=job1
+func getHandleJobKillFunc(mgr *JobMgr) func(http.ResponseWriter, *http.Request) {
+	return func (w http.ResponseWriter,r *http.Request){
+		var(
+			err error
+			jobName string
+		)
+		w.Header().Set("Content-Type","application/json")
+		if err = r.ParseForm();err != nil {
+			goto ERR
+		}
+		jobName = r.PostForm.Get("name")
+		if err = mgr.KillJob(jobName);err != nil {
+			goto ERR
+		}
+		//返回正常应答
+		if _,err = w.Write(common.BuildResponse(0,"success",nil));err != nil{
+			goto ERR
+		}
 		return
 	ERR:
 		w.Write(common.BuildResponse(-1,err.Error(),nil))

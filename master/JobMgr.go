@@ -5,6 +5,7 @@ import (
 	"cron/common"
 	"encoding/json"
 	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/mvcc/mvccpb"
 	"time"
 )
 
@@ -63,7 +64,6 @@ func (jobMgr *JobMgr)SaveJob(job *common.Job)(oldJob *common.Job,err error){
 			return
 		}
 	}
-	defer jobMgr.Client.Close()
 	return oldJob,nil
 }
 
@@ -87,6 +87,51 @@ func (jobMgr *JobMgr)DeleteJob(jobName string)(oldJob *common.Job,err error){
 		}
 		oldJob = &oldJobObj
 	}
-	defer jobMgr.Client.Close()
+	return
+}
+
+//列举所有任务
+func (jobMgr *JobMgr)ListJobs()(jobList []*common.Job,err error){
+	var (
+		dirKey string
+		getResp *clientv3.GetResponse
+		kvPair *mvccpb.KeyValue
+		job *common.Job
+	)
+	dirKey = common.JOB_SAVE_DIR
+	if getResp,err = jobMgr.KV.Get(context.TODO(),dirKey,clientv3.WithPrefix());err != nil {
+		return
+	}
+	jobList = make([]*common.Job,0)
+	//遍历,反序列化
+	for _,kvPair = range getResp.Kvs{
+		job = &common.Job{}
+		if err = json.Unmarshal(kvPair.Value,job);err != nil{
+			err = nil
+			continue
+		}
+		jobList = append(jobList,job)
+	}
+	return
+}
+
+//杀死任务
+func (jobMgr *JobMgr)KillJob(jobName string)(err error){
+	//更新一下key=/cron/killer/任务名
+	var(
+		killerKey string
+		leaseGrantResp *clientv3.LeaseGrantResponse
+	)
+	//拼装被杀死任务的key
+	killerKey = common.JOB_KILL_DIR + jobName
+
+	//让worker监听到一次put操作,同时将这个put操作绑定一个租约,过期自动销毁
+	if leaseGrantResp,err = jobMgr.Lease.Grant(context.TODO(),common.OP_KILL_EXPIRED);err != nil{
+		return
+	}
+	//设置kill标记
+	if _,err = jobMgr.KV.Put(context.TODO(),killerKey,"",clientv3.WithLease(leaseGrantResp.ID));err != nil {
+		return
+	}
 	return
 }

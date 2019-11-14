@@ -3,7 +3,7 @@ package main
 import (
 	"cron/master"
 	"flag"
-	"fmt"
+	"log"
 	"runtime"
 	"time"
 )
@@ -53,7 +53,6 @@ func main() {
 	for{
 		time.Sleep(1*time.Second)
 	}
-	return
 ERR:
-	fmt.Println(err)
+	log.Println(err)
 }
