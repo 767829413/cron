@@ -8,25 +8,26 @@ import (
 	"time"
 )
 
-var(
+var (
 	confFile string //配置文件路径
 )
 
 //解析命令行参数
-func initArgs(){
+func initArgs() {
 	//master -config ./master.json
-	flag.StringVar(&confFile,"config","./master.json","指定master.json")
+	flag.StringVar(&confFile, "config", "./master.json", "指定master.json")
 	flag.Parse()
 }
+
 //初始化线程数量
-func initEnv(){
+func initEnv() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
 func main() {
-	var(
-		err error
-		conf *master.Config
+	var (
+		err    error
+		conf   *master.Config
 		jobMgr *master.JobMgr
 	)
 
@@ -37,21 +38,21 @@ func main() {
 	initEnv()
 
 	//加载配置
-	if conf,err = master.NewConfig(confFile);err != nil{
+	if conf, err = master.NewConfig(confFile); err != nil {
 		goto ERR
 	}
 
-	if jobMgr,err = master.NewJobMgr(conf);err !=nil{
+	if jobMgr, err = master.NewJobMgr(conf); err != nil {
 		goto ERR
 	}
 
 	//启动Api HTTP服务
-	if _,err = master.NewApiServer(jobMgr,conf);err!=nil{
+	if _, err = master.NewApiServer(jobMgr, conf); err != nil {
 		goto ERR
 	}
 	//正常退出
-	for{
-		time.Sleep(1*time.Second)
+	for {
+		time.Sleep(1 * time.Second)
 	}
 ERR:
 	log.Println(err)
