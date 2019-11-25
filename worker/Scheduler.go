@@ -100,13 +100,13 @@ func (scheduler *Scheduler) handlerJobEvent(event *common.JobEvent) {
 		err             error
 	)
 	switch event.EventType {
-	case common.JOB_SAVE_EVENT:
+	case common.JobSaveEvent:
 		//保存|更新任务事件
 		if jobSchedulePlan, err = common.BuildJobSchedulePlan(event.Job); err != nil {
 			return
 		}
 		scheduler.JobSchedulePlan[event.Job.Name] = jobSchedulePlan
-	case common.JOB_DELETE_EVENT:
+	case common.JobDeleteEvent:
 		//删除任务事件
 		if jobSchedulePlan, jobExist = scheduler.JobSchedulePlan[event.Job.Name]; jobExist {
 			delete(scheduler.JobSchedulePlan, event.Job.Name)

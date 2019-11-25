@@ -64,14 +64,14 @@ func (jobMgr *JobMgr) WatchJobs() (err error) {
 		jobEvent           *common.JobEvent
 	)
 	//1.获取/cron/jobs/目录下的所有任务,并且获知当前集群的revision
-	if getResp, err = jobMgr.KV.Get(context.TODO(), common.JOB_SAVE_DIR, clientv3.WithPrefix()); err != nil {
+	if getResp, err = jobMgr.KV.Get(context.TODO(), common.JobSaveDir, clientv3.WithPrefix()); err != nil {
 		return
 	}
 	//遍历当前任务
 	for _, kvPair = range getResp.Kvs {
 		//反序列化json得到job
 		if job, err = common.UnpackJob(kvPair.Value); err == nil {
-			jobEvent = common.BuildJobEvent(common.JOB_SAVE_EVENT, job)
+			jobEvent = common.BuildJobEvent(common.JobSaveEvent, job)
 			// TODO 把job同步给调度的goruntime
 			SchedulerSingle.JobEventChan <- jobEvent
 		}
@@ -81,7 +81,7 @@ func (jobMgr *JobMgr) WatchJobs() (err error) {
 		//从get的时刻监听后续版本变化
 		watchStartRevision = getResp.Header.Revision + 1
 		//启动监听/cron/jobs/目录的后续变化
-		watchChan = jobMgr.Watcher.Watch(context.TODO(), common.JOB_SAVE_DIR, clientv3.WithPrefix(), clientv3.WithRev(watchStartRevision))
+		watchChan = jobMgr.Watcher.Watch(context.TODO(), common.JobSaveDir, clientv3.WithPrefix(), clientv3.WithRev(watchStartRevision))
 		for watchResp = range watchChan {
 			for _, event = range watchResp.Events {
 				switch event.Type {
@@ -90,7 +90,7 @@ func (jobMgr *JobMgr) WatchJobs() (err error) {
 						continue
 					}
 					//构造保存/更新Event
-					jobEvent = common.BuildJobEvent(common.JOB_SAVE_EVENT, job)
+					jobEvent = common.BuildJobEvent(common.JobSaveEvent, job)
 				case mvccpb.DELETE: //删除
 					//提取任务名进行拼接
 					jobName = common.ExtractJobName(string(event.Kv.Key))
@@ -98,7 +98,7 @@ func (jobMgr *JobMgr) WatchJobs() (err error) {
 						Name: jobName,
 					}
 					//构造删除Event
-					jobEvent = common.BuildJobEvent(common.JOB_DELETE_EVENT, job)
+					jobEvent = common.BuildJobEvent(common.JobDeleteEvent, job)
 				}
 				//TODO 推送更新事件给scheduler
 				SchedulerSingle.JobEventChan <- jobEvent

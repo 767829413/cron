@@ -80,7 +80,7 @@ func UnpackJob(value []byte) (res *Job, err error) {
 
 //提取etcd的key中任务名称
 func ExtractJobName(jobKey string) string {
-	return strings.TrimPrefix(jobKey, JOB_SAVE_DIR)
+	return strings.TrimPrefix(jobKey, JobSaveDir)
 }
 
 //任务变化的事件,1.更新 2.删除

@@ -49,7 +49,7 @@ func (jobMgr *JobMgr) SaveJob(job *common.Job) (oldJob *common.Job, err error) {
 		putRes   *clientv3.PutResponse
 	)
 	//拼接任务名称
-	jobKey := common.JOB_SAVE_DIR + job.Name
+	jobKey := common.JobSaveDir + job.Name
 	//任务信息json化
 	if jobValue, err = json.Marshal(job); err != nil {
 		return
@@ -74,7 +74,7 @@ func (jobMgr *JobMgr) DeleteJob(jobName string) (oldJob *common.Job, err error) 
 		delRes    *clientv3.DeleteResponse
 	)
 	//拼接任务名称
-	jobKey := common.JOB_SAVE_DIR + jobName
+	jobKey := common.JobSaveDir + jobName
 	//从etcd删除
 	if delRes, err = jobMgr.KV.Delete(context.TODO(), jobKey, clientv3.WithPrevKV()); err != nil {
 		return
@@ -98,7 +98,7 @@ func (jobMgr *JobMgr) ListJobs() (jobList []*common.Job, err error) {
 		kvPair  *mvccpb.KeyValue
 		job     *common.Job
 	)
-	dirKey = common.JOB_SAVE_DIR
+	dirKey = common.JobSaveDir
 	if getResp, err = jobMgr.KV.Get(context.TODO(), dirKey, clientv3.WithPrefix()); err != nil {
 		return
 	}
@@ -123,10 +123,10 @@ func (jobMgr *JobMgr) KillJob(jobName string) (err error) {
 		leaseGrantResp *clientv3.LeaseGrantResponse
 	)
 	//拼装被杀死任务的key
-	killerKey = common.JOB_KILL_DIR + jobName
+	killerKey = common.JobKillDir + jobName
 
 	//让worker监听到一次put操作,同时将这个put操作绑定一个租约,过期自动销毁
-	if leaseGrantResp, err = jobMgr.Lease.Grant(context.TODO(), common.OP_KILL_EXPIRED); err != nil {
+	if leaseGrantResp, err = jobMgr.Lease.Grant(context.TODO(), common.OpKillExpired); err != nil {
 		return
 	}
 	//设置kill标记

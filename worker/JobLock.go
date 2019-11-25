@@ -68,13 +68,13 @@ func (jobLock *JobLock) TryLock() (err error) {
 	}()
 
 	txn = jobLock.KV.Txn(context.TODO())
-	lockKey = common.JOB_LOCK_DIR + jobLock.JobName
+	lockKey = common.JobLockDir + jobLock.JobName
 	txn.If(clientv3.Compare(clientv3.CreateRevision(lockKey), "=", 0)).Then(clientv3.OpPut(lockKey, "", clientv3.WithLease(leaseGrantResp.ID))).Else(clientv3.OpGet(lockKey))
 	if txnResp, err = txn.Commit(); err != nil {
 		goto FAIL
 	}
 	if !txnResp.Succeeded {
-		err = common.ERR_LOCK_ALREADY_REQUIRED
+		err = common.ErrLockAlreadyRequired
 		goto FAIL
 	}
 	jobLock.LeaseID = leaseGrantResp.ID
@@ -83,7 +83,7 @@ func (jobLock *JobLock) TryLock() (err error) {
 	return
 FAIL:
 	cancelFunc()
-	jobLock.Lease.Revoke(context.TODO(), leaseGrantResp.ID)
+	_,_ = jobLock.Lease.Revoke(context.TODO(), leaseGrantResp.ID)
 	return
 }
 
@@ -91,6 +91,6 @@ FAIL:
 func (jobLock *JobLock) UnLock() {
 	if jobLock.IsLock {
 		jobLock.CanceFunc()
-		jobLock.Lease.Revoke(context.TODO(), jobLock.LeaseID)
+		_,_ = jobLock.Lease.Revoke(context.TODO(), jobLock.LeaseID)
 	}
 }
