@@ -15,19 +15,25 @@ type Config struct {
 	WebRoot         string   `json:"webroot"`
 }
 
-func NewConfig(fileName string) (conf *Config, err error) {
+var (
+	ConfigSingle *Config
+)
+
+func NewConfig(fileName string) (err error) {
 	var (
 		content []byte
+		conf    *Config
 	)
 	//1.读入配置文件
 	if content, err = ioutil.ReadFile(fileName); err != nil {
-		return nil, err
+		return
 	}
 
 	//2.反序列化
 	if err = json.Unmarshal(content, &conf); err != nil {
-		return nil, err
+		return
 	}
 	//3.赋值单例
-	return conf, nil
+	ConfigSingle = conf
+	return
 }

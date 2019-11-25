@@ -15,7 +15,11 @@ type JobMgr struct {
 	Lease  clientv3.Lease
 }
 
-func NewJobMgr(conf *Config) (mgr *JobMgr, err error) {
+var (
+	JobMgrSingle *JobMgr
+)
+
+func NewJobMgr() (err error) {
 	var (
 		config clientv3.Config
 		client *clientv3.Client
@@ -24,22 +28,23 @@ func NewJobMgr(conf *Config) (mgr *JobMgr, err error) {
 	)
 	//初始化配置
 	config = clientv3.Config{
-		Endpoints:   conf.EtcdEndPoints,                                     //集群地址
-		DialTimeout: time.Duration(conf.EtcdDialTimeout) * time.Millisecond, //超时时间
+		Endpoints:   ConfigSingle.EtcdEndPoints,                                     //集群地址
+		DialTimeout: time.Duration(ConfigSingle.EtcdDialTimeout) * time.Millisecond, //超时时间
 	}
 
 	//建立链接
 	if client, err = clientv3.New(config); err != nil {
-		return nil, err
+		return
 	}
 	//得到KV和Lease的API子集
 	kv = clientv3.NewKV(client)
 	lease = clientv3.NewLease(client)
-	return &JobMgr{
+	JobMgrSingle = &JobMgr{
 		Client: client,
 		KV:     kv,
 		Lease:  lease,
-	}, nil
+	}
+	return
 }
 
 //保存任务

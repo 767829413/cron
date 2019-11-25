@@ -26,11 +26,8 @@ func initEnv() {
 
 func main() {
 	var (
-		err    error
-		conf   *master.Config
-		jobMgr *master.JobMgr
+		err error
 	)
-
 	//初始化命令行参数
 	initArgs()
 
@@ -38,16 +35,16 @@ func main() {
 	initEnv()
 
 	//加载配置
-	if conf, err = master.NewConfig(confFile); err != nil {
+	if err = master.NewConfig(confFile); err != nil {
 		goto ERR
 	}
 
-	if jobMgr, err = master.NewJobMgr(conf); err != nil {
+	if err = master.NewJobMgr(); err != nil {
 		goto ERR
 	}
 
 	//启动Api HTTP服务
-	if _, err = master.NewApiServer(jobMgr, conf); err != nil {
+	if _, err = master.NewApiServer(); err != nil {
 		goto ERR
 	}
 	//正常退出

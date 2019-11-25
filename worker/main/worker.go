@@ -52,10 +52,13 @@ func main() {
 	if err = worker.NewScheduler(excutor); err != nil {
 		goto ERR
 	}
-	//进行监听
+	//进行监听(任务变化)
 	if err = worker.JobMgrSingle.WatchJobs(); err != nil {
 		goto ERR
 	}
+	//杀死任务监听
+
+	//任务调度
 	worker.SchedulerSingle.ScheduleLoop()
 	//正常退出
 	for {

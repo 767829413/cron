@@ -79,8 +79,8 @@ func UnpackJob(value []byte) (res *Job, err error) {
 }
 
 //提取etcd的key中任务名称
-func ExtractJobName(jobKey string) string {
-	return strings.TrimPrefix(jobKey, JobSaveDir)
+func ExtractJobName(jobKey string, jobPreFix string) string {
+	return strings.TrimPrefix(jobKey, jobPreFix)
 }
 
 //任务变化的事件,1.更新 2.删除
@@ -120,10 +120,10 @@ func BuildJobExcuteInfo(jobSchedulePlanlan *JobSchedulePlan) (jobExecuteInfo *Jo
 }
 
 //构建执行结果信息
-func BuildJobExcuteResult(info *JobExecuteInfo, start time.Time, end time.Time, err error) (jobExcuteResult *JobExcuteResult) {
+func BuildJobExcuteResult(info *JobExecuteInfo, output []byte, start time.Time, end time.Time, err error) (jobExcuteResult *JobExcuteResult) {
 	return &JobExcuteResult{
 		ExccuteInfo: info,
-		Output:      make([]byte, 0),
+		Output:      output,
 		StartTime:   start,
 		EndTime:     end,
 		Err:         err,

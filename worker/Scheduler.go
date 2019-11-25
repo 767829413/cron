@@ -144,5 +144,5 @@ func (scheduler *Scheduler) PushJobResult(result *common.JobExcuteResult) {
 func (scheduler *Scheduler) handlerJobResult(result *common.JobExcuteResult) {
 	//删除执行状态表里的任务
 	delete(scheduler.JobExectingTable, result.ExccuteInfo.Job.Name)
-	log.Println("任务执行完成: ", result.ExccuteInfo.Job.Name, string(result.Output), "这是错误: ", result.Err)
+	log.Println("任务执行完成: ", result.ExccuteInfo.Job.Name, "\n", string(result.Output), "\n", "错误输出: ", result.Err)
 }
