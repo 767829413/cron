@@ -117,3 +117,4 @@ func GetHandleJobKillFunc() func(http.ResponseWriter, *http.Request) {
 		w.Write(common.BuildResponse(-1, err.Error(), nil))
 	}
 }
+

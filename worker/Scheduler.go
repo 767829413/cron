@@ -11,11 +11,16 @@ var (
 )
 
 type Scheduler struct {
-	Excutor          *Excutor                           //执行器
-	JobEventChan     chan *common.JobEvent              //etcd任务事件变化
-	JobSchedulePlan  map[string]*common.JobSchedulePlan //任务调度计划
-	JobExectingTable map[string]*common.JobExecuteInfo  //任务执行状态表
-	JobResultChan    chan *common.JobExcuteResult       //任务执行结果通道
+	//执行器
+	Excutor *Excutor
+	//etcd任务事件变化
+	JobEventChan chan *common.JobEvent
+	//任务调度计划
+	JobSchedulePlan map[string]*common.JobSchedulePlan
+	//任务执行状态表
+	JobExectingTable map[string]*common.JobExecuteInfo
+	//任务执行结果通道
+	JobResultChan chan *common.JobExcuteResult
 }
 
 //初始化Scheduler
@@ -45,11 +50,17 @@ func (scheduler *Scheduler) ScheduleLoop() {
 	for {
 		select {
 		//监听任务变化事件
-		case jobEvent = <-scheduler.JobEventChan: //内存中列表的增删改查
-			scheduler.handlerJobEvent(jobEvent)
+		case jobEvent = <-scheduler.JobEventChan:
+			//内存中列表的增删改查
+			if jobEvent != nil {
+				scheduler.handlerJobEvent(jobEvent)
+			}
 		case <-shceduleTimer.C: //最近任务到期了
-		case jobResult = <-scheduler.JobResultChan: //监听任务执行结果
-			scheduler.handlerJobResult(jobResult)
+		case jobResult = <-scheduler.JobResultChan:
+			//监听任务执行结果
+			if jobResult != nil {
+				scheduler.handlerJobResult(jobResult)
+			}
 		}
 		//调度一次任务
 		scheduleAfter = scheduler.TrySchedule()
@@ -61,7 +72,6 @@ func (scheduler *Scheduler) ScheduleLoop() {
 //任务执行逻辑
 func (scheduler *Scheduler) TrySchedule() (scheduleAfter time.Duration) {
 	/**
-	TODO
 	1.遍历所有任务
 	2.过期任务立即执行
 	3.统计最近要过期的任务时间
@@ -96,20 +106,25 @@ func (scheduler *Scheduler) TrySchedule() (scheduleAfter time.Duration) {
 func (scheduler *Scheduler) handlerJobEvent(event *common.JobEvent) {
 	var (
 		jobSchedulePlan *common.JobSchedulePlan
+		jobExcuteInfo   *common.JobExecuteInfo
+		jobExcuting     bool
 		jobExist        bool
 		err             error
 	)
 	switch event.EventType {
-	case common.JobSaveEvent:
-		//保存|更新任务事件
+	case common.JobSaveEvent: //保存|更新任务事件
 		if jobSchedulePlan, err = common.BuildJobSchedulePlan(event.Job); err != nil {
 			return
 		}
 		scheduler.JobSchedulePlan[event.Job.Name] = jobSchedulePlan
-	case common.JobDeleteEvent:
-		//删除任务事件
+	case common.JobDeleteEvent: //删除任务事件
 		if jobSchedulePlan, jobExist = scheduler.JobSchedulePlan[event.Job.Name]; jobExist {
 			delete(scheduler.JobSchedulePlan, event.Job.Name)
+		}
+	case common.JobKillEvent: //杀死任务事件(通知取消comman执行)
+		if jobExcuteInfo, jobExcuting = scheduler.JobExectingTable[event.Job.Name]; jobExcuting {
+			//触发command杀死shell子进程,任务退出
+			jobExcuteInfo.CancelFunc()
 		}
 	}
 }
@@ -144,5 +159,9 @@ func (scheduler *Scheduler) PushJobResult(result *common.JobExcuteResult) {
 func (scheduler *Scheduler) handlerJobResult(result *common.JobExcuteResult) {
 	//删除执行状态表里的任务
 	delete(scheduler.JobExectingTable, result.ExccuteInfo.Job.Name)
-	log.Println("任务执行完成: ", result.ExccuteInfo.Job.Name, "\n", string(result.Output), "\n", "错误输出: ", result.Err)
+	//生成执行日志
+	if result.Err != common.ErrLockAlreadyRequired {
+		//TODO 存储到Mongodb
+		go LogMongoSingle.Join(common.BuildJobLog(result))
+	}
 }

@@ -40,6 +40,10 @@ func main() {
 	if err = worker.NewConfig(confFile); err != nil {
 		goto ERR
 	}
+	//启动日志gorounte
+	if err = worker.NewLogMongoDB(); err != nil {
+		goto ERR
+	}
 	//初始化任务管理器
 	if err = worker.NewJobMgr(); err != nil {
 		goto ERR
@@ -57,6 +61,9 @@ func main() {
 		goto ERR
 	}
 	//杀死任务监听
+	if err = worker.JobMgrSingle.WatchKiller(); err != nil {
+		goto ERR
+	}
 
 	//任务调度
 	worker.SchedulerSingle.ScheduleLoop()

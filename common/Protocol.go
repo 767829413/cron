@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/gorhill/cronexpr"
 	"strings"
@@ -23,9 +24,11 @@ type JobSchedulePlan struct {
 
 //执行状态
 type JobExecuteInfo struct {
-	Job      *Job      //任务信息
-	PlanTime time.Time //理论调度时间
-	RealTime time.Time //真实调度时间
+	Job           *Job               //任务信息
+	PlanTime      time.Time          //理论调度时间
+	RealTime      time.Time          //真实调度时间
+	CancelContext context.Context    //用于取消任务的context
+	CancelFunc    context.CancelFunc //用于取消command的执行函数
 }
 
 //任务执行结果
@@ -35,7 +38,23 @@ type JobExcuteResult struct {
 	Err         error           //执行的错误
 	StartTime   time.Time       //启动时间(真实)
 	EndTime     time.Time       //结束时间
+}
 
+//任务执行日志
+type JobLog struct {
+	JobName      string `bson:"jobName"`      //任务名称
+	Command      string `bson:"command"`      //脚本命令
+	Err          string `bson:"err"`          //错误信息
+	Output       string `bson:"output"`       //输出信息
+	PlanTime     int64  `bson:"planTime"`     //计划开始时间
+	ScheduleTime int64  `bson:"scheduleTime"` //任务调度时间
+	StartTime    int64  `bson:"startTime"`    //任务执行开始时间
+	EndTime      int64  `bson:"endTime"`      //任务执行结束时间
+}
+
+//日志批次(做成多批次插入)
+type LogBatch struct {
+	Logs []interface{} //多条日志
 }
 
 //HTTP接口应答
@@ -116,6 +135,7 @@ func BuildJobExcuteInfo(jobSchedulePlanlan *JobSchedulePlan) (jobExecuteInfo *Jo
 		PlanTime: jobSchedulePlanlan.NextTime, //计划调度时间
 		RealTime: time.Now(),                  //真实调度时间
 	}
+	jobExecuteInfo.CancelContext, jobExecuteInfo.CancelFunc = context.WithCancel(context.TODO())
 	return
 }
 
@@ -128,4 +148,23 @@ func BuildJobExcuteResult(info *JobExecuteInfo, output []byte, start time.Time, 
 		EndTime:     end,
 		Err:         err,
 	}
+}
+
+//构建执行日志信息
+func BuildJobLog(result *JobExcuteResult) (jobLog *JobLog) {
+	jobLog = &JobLog{
+		JobName:      result.ExccuteInfo.Job.Name,
+		Command:      result.ExccuteInfo.Job.Command,
+		Output:       string(result.Output),
+		PlanTime:     result.ExccuteInfo.PlanTime.UnixNano() / 1000 / 1000,
+		ScheduleTime: result.ExccuteInfo.RealTime.UnixNano() / 1000 / 1000,
+		StartTime:    result.StartTime.UnixNano() / 1000 / 1000,
+		EndTime:      result.EndTime.UnixNano() / 1000 / 1000,
+	}
+	if result.Err != nil {
+		jobLog.Err = result.Err.Error()
+	} else {
+		jobLog.Err = ""
+	}
+	return
 }

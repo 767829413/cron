@@ -7,12 +7,14 @@ import (
 
 //程序配置
 type Config struct {
-	EtcdEndPoints     []string `json:"etcdEndPoints"`
-	EtcdDialTimeout   int      `json:"etcdDialTimeout"`
-	EtcdLeaseTimeout  int      `json:"etcdLeaseTimeout"`
-	ScheduleSleepTime int      `json:"scheduleSleepTime"`
-	ShellExcuseBash   string   `json:"shellExcuseBash"`
-	ShellExcuseArg    string   `json:"shellExcuseArg"`
+	EtcdEndPoints       []string `json:"etcdEndPoints"`
+	EtcdDialTimeout     int      `json:"etcdDialTimeout"`
+	EtcdLeaseTimeout    int      `json:"etcdLeaseTimeout"`
+	MongoUri            string   `json:"mongoUri"`
+	MongoConnectTimeout int      `json:"mongoConnectTimeout"`
+	ScheduleSleepTime   int      `json:"scheduleSleepTime"`
+	ShellExcuseBash     string   `json:"shellExcuseBash"`
+	ShellExcuseArg      string   `json:"shellExcuseArg"`
 }
 
 var (

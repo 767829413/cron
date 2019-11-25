@@ -8,6 +8,12 @@
   "etcd租约的过期时间": "单位秒",
   "etcdLeaseTimeout": 5,
 
+  "mongo的url地址": "单机版本",
+  "mongoUri": "mongodb://106.54.214.139:27017",
+
+  "mongo的连接超时时间": "单位毫秒,默认5000",
+  "mongoConnectTimeout": 5000,
+
   "任务调度的睡眠时间": "单位是秒,默认1",
   "scheduleSleepTime": 1,
 
