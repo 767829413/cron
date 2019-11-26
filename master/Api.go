@@ -4,6 +4,7 @@ import (
 	"cron/common"
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 //保存任务接口
@@ -118,3 +119,70 @@ func GetHandleJobKillFunc() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+//查看任务日志
+//POST /job/log
+func GetHandleJobLogFunc() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var (
+			err        error
+			name       string // 任务名字
+			skipParam  string // 从第几条开始
+			limitParam string // 返回多少条
+			skip       int
+			limit      int
+			logArr     []*common.JobLog
+		)
+
+		// 解析GET参数
+		if err = r.ParseForm(); err != nil {
+			goto ERR
+		}
+
+		// 获取请求参数 /job/log?name=job10&skip=0&limit=10
+		name = r.Form.Get("name")
+		skipParam = r.Form.Get("skip")
+		limitParam = r.Form.Get("limit")
+		if skip, err = strconv.Atoi(skipParam); err != nil {
+			skip = 0
+		}
+		if limit, err = strconv.Atoi(limitParam); err != nil {
+			limit = 20
+		}
+
+		if logArr, err = LogMgrSingle.ListLog(name, skip, limit); err != nil {
+			goto ERR
+		}
+
+		//返回正常应答
+		if _, err = w.Write(common.BuildResponse(0, "success", logArr)); err != nil {
+			goto ERR
+		}
+		return
+	ERR:
+		w.Write(common.BuildResponse(-1, err.Error(), nil))
+	}
+}
+
+//查看健康节点
+//POST /worker/list
+func GetHandleWorkerListFunc() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var (
+			workerArr []string
+			err       error
+		)
+
+		if workerArr, err = WorkerMgrSingle.ListWorkers(); err != nil {
+			goto ERR
+		}
+
+		//返回正常应答
+		if _, err = w.Write(common.BuildResponse(0, "success", workerArr)); err != nil {
+			goto ERR
+		}
+		return
+
+	ERR:
+		w.Write(common.BuildResponse(-1, err.Error(), nil))
+	}
+}

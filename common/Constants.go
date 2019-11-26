@@ -7,6 +7,9 @@ const (
 	JobKillDir = "/cron/killer/"
 	//任务上锁目录
 	JobLockDir = "/cron/lock/"
+	// 服务注册目录
+	JobWorkerDir = "/cron/workers/"
+
 	//kill操作的租约过期时间
 	OpKillExpired = 1
 

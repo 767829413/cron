@@ -10,5 +10,7 @@ func SetRoute() (mux *http.ServeMux) {
 	mux.HandleFunc("/job/delete", GetHandleJobDeleteFunc())
 	mux.HandleFunc("/job/list", GetHandleJobListFunc())
 	mux.HandleFunc("/job/kill", GetHandleJobKillFunc())
+	mux.HandleFunc("/job/log", GetHandleJobLogFunc())
+	mux.HandleFunc("/worker/list", GetHandleWorkerListFunc())
 	return
 }

@@ -38,6 +38,15 @@ func main() {
 	if err = master.NewConfig(confFile); err != nil {
 		goto ERR
 	}
+	//加载日志解析器
+	if err = master.NewLogMgr(); err != nil {
+		goto ERR
+	}
+
+	//加载工作节点解析器
+	if err = master.NewWorkerMgr(); err != nil {
+		goto ERR
+	}
 
 	if err = master.NewJobMgr(); err != nil {
 		goto ERR

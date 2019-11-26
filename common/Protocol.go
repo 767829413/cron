@@ -57,6 +57,16 @@ type LogBatch struct {
 	Logs []interface{} //多条日志
 }
 
+// 任务日志过滤条件
+type JobLogFilter struct {
+	JobName string `bson:"jobName"`
+}
+
+// 任务日志排序规则
+type SortLogByStartTime struct {
+	SortOrder int `bson:"startTime"` // {startTime: -1}
+}
+
 //HTTP接口应答
 type Response struct {
 	Errno int         `json:"errno"`
@@ -100,6 +110,10 @@ func UnpackJob(value []byte) (res *Job, err error) {
 //提取etcd的key中任务名称
 func ExtractJobName(jobKey string, jobPreFix string) string {
 	return strings.TrimPrefix(jobKey, jobPreFix)
+}
+
+func ExtractWorkerIP(regKey string) string {
+	return strings.TrimPrefix(regKey, JobWorkerDir)
 }
 
 //任务变化的事件,1.更新 2.删除
