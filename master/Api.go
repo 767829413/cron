@@ -130,9 +130,9 @@ func GetHandleJobLogFunc() func(http.ResponseWriter, *http.Request) {
 			limitParam string // 返回多少条
 			skip       int
 			limit      int
-			logArr     []*common.JobLog
+			logArr     []*common.JobViewLog
 		)
-
+		w.Header().Set("Content-Type", "application/json")
 		// 解析GET参数
 		if err = r.ParseForm(); err != nil {
 			goto ERR
@@ -148,7 +148,6 @@ func GetHandleJobLogFunc() func(http.ResponseWriter, *http.Request) {
 		if limit, err = strconv.Atoi(limitParam); err != nil {
 			limit = 20
 		}
-
 		if logArr, err = LogMgrSingle.ListLog(name, skip, limit); err != nil {
 			goto ERR
 		}
@@ -171,7 +170,7 @@ func GetHandleWorkerListFunc() func(http.ResponseWriter, *http.Request) {
 			workerArr []string
 			err       error
 		)
-
+		w.Header().Set("Content-Type", "application/json")
 		if workerArr, err = WorkerMgrSingle.ListWorkers(); err != nil {
 			goto ERR
 		}

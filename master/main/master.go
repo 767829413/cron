@@ -42,7 +42,6 @@ func main() {
 	if err = master.NewLogMgr(); err != nil {
 		goto ERR
 	}
-
 	//加载工作节点解析器
 	if err = master.NewWorkerMgr(); err != nil {
 		goto ERR

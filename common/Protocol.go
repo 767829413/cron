@@ -40,7 +40,7 @@ type JobExcuteResult struct {
 	EndTime     time.Time       //结束时间
 }
 
-//任务执行日志
+//任务执行日志(入库)
 type JobLog struct {
 	JobName      string `bson:"jobName"`      //任务名称
 	Command      string `bson:"command"`      //脚本命令
@@ -50,6 +50,18 @@ type JobLog struct {
 	ScheduleTime int64  `bson:"scheduleTime"` //任务调度时间
 	StartTime    int64  `bson:"startTime"`    //任务执行开始时间
 	EndTime      int64  `bson:"endTime"`      //任务执行结束时间
+}
+
+//任务执行日志(显示)
+type JobViewLog struct {
+	JobName      string `json:"jobName"`      //任务名称
+	Command      string `json:"command"`      //脚本命令
+	Err          string `json:"err"`          //错误信息
+	Output       string `json:"output"`       //输出信息
+	PlanTime     int64  `json:"planTime"`     //计划开始时间
+	ScheduleTime int64  `json:"scheduleTime"` //任务调度时间
+	StartTime    int64  `json:"startTime"`    //任务执行开始时间
+	EndTime      int64  `json:"endTime"`      //任务执行结束时间
 }
 
 //日志批次(做成多批次插入)

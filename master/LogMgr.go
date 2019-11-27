@@ -37,17 +37,17 @@ func NewLogMgr() (err error) {
 }
 
 // 查看任务日志
-func (logMgr *LogMgr) ListLog(name string, skip int, limit int) (logArr []*common.JobLog, err error) {
+func (logMgr *LogMgr) ListLog(name string, skip int, limit int) (logArr []*common.JobViewLog, err error) {
 	var (
 		filter      *common.JobLogFilter
 		logSort     *common.SortLogByStartTime
 		cursor      *mongo.Cursor
-		jobLog      *common.JobLog
+		jobLog      *common.JobViewLog
 		findOptions *options.FindOptions
 	)
 
 	// len(logArr)
-	logArr = make([]*common.JobLog, 0)
+	logArr = make([]*common.JobViewLog, 0)
 
 	// 过滤条件
 	filter = &common.JobLogFilter{JobName: name}
@@ -60,16 +60,15 @@ func (logMgr *LogMgr) ListLog(name string, skip int, limit int) (logArr []*commo
 	findOptions.SetSkip(int64(skip))
 	findOptions.SetSort(logSort)
 	findOptions.SetLimit(int64(limit))
-
 	// 查询
 	if cursor, err = logMgr.logCollection.Find(context.TODO(), filter, findOptions); err != nil {
 		return
 	}
 	// 延迟释放游标
-	defer cursor.Close(context.TODO())
+	defer cursorClose(cursor)
 
 	for cursor.Next(context.TODO()) {
-		jobLog = &common.JobLog{}
+		jobLog = &common.JobViewLog{}
 
 		// 反序列化BSON
 		if err = cursor.Decode(jobLog); err != nil {
@@ -78,4 +77,8 @@ func (logMgr *LogMgr) ListLog(name string, skip int, limit int) (logArr []*commo
 		logArr = append(logArr, jobLog)
 	}
 	return
+}
+
+func cursorClose(cursor *mongo.Cursor) {
+	_ = cursor.Close(context.TODO())
 }
